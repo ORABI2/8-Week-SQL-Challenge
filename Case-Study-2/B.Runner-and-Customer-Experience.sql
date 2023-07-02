@@ -130,10 +130,10 @@ successful_cte as(
 
 select
 	t.runner_id,
-	(successful_orders*100/total_orders) as delivery_percentage
+	Concat((successful_orders*100/total_orders), '%') as delivery_percentage
 from
 	total_cte t ,
 	successful_cte s 
-where t.runner_id = s.runner_id;
+where t.runner_id = s.runner_id
 
 --##################
