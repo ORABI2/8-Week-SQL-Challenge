@@ -133,9 +133,31 @@ group by co.order_id, co.extras, co.exclusions, n.pizza_name;
 */
 
 
-
-
 -- 5.Generate an alphabetically ordered comma separated ingredient list for each pizza 
 --   order from the customer_orders table and add a 2x in front of any relevant ingredients
 --   For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
 -- 6.What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
+
+
+-- If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes - how much money has Pizza Runner made so far if there are no delivery fees?
+
+with successful_cte as(
+	select	
+		cr.runner_id ,
+		co.pizza_id ,
+		COUNT(cr.runner_id) as orders
+	from cleaned_runner_orders cr , customer_orders co
+	where cr.order_id = co.order_id and cancellation is Null
+	group by cr.runner_id,co.pizza_id
+
+)
+select 
+	runner_id,
+	SUM(
+		case
+		when pizza_id = 1 then orders*12
+		else orders*10
+		end 
+		) total_profit
+from successful_cte
+group by runner_id;
