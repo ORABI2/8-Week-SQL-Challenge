@@ -58,6 +58,8 @@ with churned_cte as(
 	select 
 		customer_id,
 		plan_id,
+		start_date,
+		Lead(plan_id,1) over(partition by customer_id order by start_date)as ss,
 		Case
 			WHEN plan_id = 0 AND Lead(plan_id,1) over(partition by customer_id order by start_date) = 4 THEN 1
 			ELSE 0
@@ -128,7 +130,54 @@ with cte as(
 )
 select AVG(DATEDIFF(DAY, s.start_date, c.start_date)) as avg_days
 from cte c JOIN subscriptions s on s.customer_id = c.customer_id
-where s.plan_id = 0
+where s.plan_id = 0;
+
 -- 10. Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)
+with join_date_cte as(
+	select customer_id, start_date as join_date
+	from subscriptions
+	where plan_id = 0
+),
+pro_plan_date as(
+	select customer_id, start_date as pro_date
+	from subscriptions
+	where plan_id = 3
+),
+periods_cte as(
+	select 
+		j.customer_id,
+		join_date,
+		pro_date,
+		DATEDIFF(DAY, join_date, pro_date)/30 + 1 as bin --creating monthly bins of 30 days period
+	from pro_plan_date p JOIN join_date_cte j on j.customer_id = p.customer_id
+
+)
+select 
+	case
+		when bin = 1 THEN CONCAT(bin-1,'-', bin*30, ' days')
+		else CONCAT((bin-1)*30,'-', bin*30,' days' )
+	end as Periods,
+	COUNT(customer_id) as total_customers,
+	cast(AVG(DATEDIFF(DAY, join_date, pro_date)*1.0)AS decimal(6,2)) as avg_days
+from periods_cte
+group by bin;
+
+
 
 -- 11. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
+
+with downgraded_cte as(
+	select 
+		customer_id,
+		plan_id,
+		start_date,
+		Lead(plan_id,1) over(partition by customer_id order by start_date)as ss,
+		Case
+			WHEN plan_id = 2 AND Lead(plan_id,1) over(partition by customer_id order by start_date) = 1 THEN 1
+			ELSE 0
+		END as downgraded_customers
+	from
+		subscriptions
+)
+select sum(downgraded_customers) as Downgraded_customers
+from downgraded_cte;
