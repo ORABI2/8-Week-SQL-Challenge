@@ -1,4 +1,4 @@
-
+-- Because I'm using MS SQL server and the max insertion values is 1000 rows so i divided the insertion on some parts you can copy it and save some time
 CREATE TABLE regions (
   region_id INTEGER,
   region_name VARCHAR(9)
